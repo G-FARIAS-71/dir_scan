@@ -7,6 +7,7 @@ use serde_json::json;
 use walkdir::WalkDir;
 use std::fs;
 use std::time::UNIX_EPOCH;
+use std::env;
 
 #[derive(Serialize, Deserialize)]
 struct FileInfo {
@@ -20,6 +21,7 @@ struct ScanResult {
     path: String,
     dir: Vec<String>,
     files: Vec<FileInfo>,
+    home: String
 }
 
 fn scan_path_to_json(path: &str) -> serde_json::Value {
@@ -27,6 +29,7 @@ fn scan_path_to_json(path: &str) -> serde_json::Value {
         path: path.to_string(),
         dir: Vec::new(),
         files: Vec::new(),
+        home: get_home()
     };
 
     for entry in WalkDir::new(path).min_depth(1).max_depth(1).into_iter().filter_map(|e| e.ok()) {
@@ -82,6 +85,22 @@ fn print_localhost() {
         println!("Não foi possível obter os endereços de interface de rede.");
     }
 }
+
+fn get_home() -> String {
+    // Em sistemas Unix-like
+    if cfg!(unix) {
+        env::var("HOME").unwrap_or_else(|_| String::from("/home"))
+    } 
+    // Em sistemas Windows
+    else if cfg!(windows) {
+        env::var("USERPROFILE").unwrap_or_else(|_| String::from("C:\\Users"))
+    } 
+    // Caso o sistema operacional não seja nem Unix-like nem Windows
+    else {
+        String::from("")
+    }
+}
+
 
 // Função principal que inicia o servidor web
 #[actix_web::main]
